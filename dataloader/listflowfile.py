@@ -6,27 +6,23 @@ import os.path
 
 IMG_EXTENSIONS = [
     '.jpg', '.JPG', '.jpeg', '.JPEG',
-    '.png', '.PNG', '.ppm', '.PPM', '.bmp', '.BMP',
+    '.png', '.PNG', '.ppm', '.PPM', '.bmp', '.BMP', '.webp',
 ]
 
 
-def is_image_file(filename): 
+def is_image_file(filename):
     return any(filename.endswith(extension) for extension in IMG_EXTENSIONS)
 
-def dataloader(filepath): # /media/hugonie/Hhome/dataset/SceneFlowData/
+def dataloader(filepath):
 
- # classes = [d for d in os.listdir(filepath) if os.path.isdir(os.path.join(filepath, d))]
- # print(classes)
- # image = [img for img in classes if img.find('frames_cleanpass') > -1]
- # print(image)
- # disp  = [dsp for dsp in classes if dsp.find('disparity') > -1]
- # print(disp)
- # monkaa
+ classes = [d for d in os.listdir(filepath) if os.path.isdir(os.path.join(filepath, d))]
+ image = [img for img in classes if img.find('frames_cleanpass') > -1]
+ disp  = [dsp for dsp in classes if dsp.find('disparity') > -1]
+
+ monkaa_path = filepath + [x for x in image if 'monkaa' in x][0]
+ monkaa_disp = filepath + [x for x in disp if 'monkaa' in x][0]
+
  
- # monkaa_path = filepath + [x for x in image if 'monkaa' in x][0]
- # monkaa_disp = filepath + [x for x in disp if 'monkaa' in x][0]
- monkaa_path = filepath + '/frames_cleanpass/monkaa'
- monkaa_disp = filepath + '/disparity/monkaa'
  monkaa_dir  = os.listdir(monkaa_path)
 
  all_left_img=[]
@@ -47,11 +43,8 @@ def dataloader(filepath): # /media/hugonie/Hhome/dataset/SceneFlowData/
     if is_image_file(monkaa_path+'/'+dd+'/right/'+im):
      all_right_img.append(monkaa_path+'/'+dd+'/right/'+im)
 
- # flyingthings
- # flying_path = filepath + [x for x in image if x == 'flyingthings3D'][0]
- # flying_disp = filepath + [x for x in disp if x == 'flyingthings3D'][0]
- flying_path = filepath + '/frames_cleanpass/flyingthings3D'
- flying_disp = filepath + '/disparity/flyingthings3D'
+ flying_path = filepath + [x for x in image if x == 'frames_cleanpass'][0]
+ flying_disp = filepath + [x for x in disp if x == 'frames_disparity'][0]
  flying_dir = flying_path+'/TRAIN/'
  subdir = ['A','B','C']
 
@@ -88,13 +81,11 @@ def dataloader(filepath): # /media/hugonie/Hhome/dataset/SceneFlowData/
          test_right_img.append(flying_dir+ss+'/'+ff+'/right/'+im)
 
 
- # driving
- # driving_dir = filepath + [x for x in image if 'driving' in x][0] + '/'
- # driving_disp = filepath + [x for x in disp if 'driving' in x][0]
- driving_dir = filepath + '/frames_cleanpass/driving/'
- driving_disp = filepath + '/disparity/driving'
 
- subdir1 = ['15mm_focallength','35mm_focallength']
+ driving_dir = filepath + [x for x in image if 'driving' in x][0] + '/'
+ driving_disp = filepath + [x for x in disp if 'driving' in x][0]
+
+ subdir1 = ['35mm_focallength','15mm_focallength']
  subdir2 = ['scene_backwards','scene_forwards']
  subdir3 = ['fast','slow']
 

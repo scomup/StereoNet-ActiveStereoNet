@@ -24,7 +24,7 @@ import numpy as np
 parser = argparse.ArgumentParser(description='StereoNet with Flyings3d')
 parser.add_argument('--maxdisp', type=int, default=192, help='maxium disparity')
 parser.add_argument('--loss_weights', type=float, nargs='+', default=[1.0, 1.0, 1.0, 1.0, 1.0])
-parser.add_argument('--datapath', default='/media/lxy/sdd1/stereo_coderesource/dataset_nie/SceneFlowData', help='datapath')
+parser.add_argument('--datapath', default='/home/liu/DP_DATA/STEREO/', help='datapath')
 parser.add_argument('--epoch', type=int, default=15, help='number of epochs to train')
 parser.add_argument('--train_bsize', type=int, default=1,
                     help='batch size for training(default: 1)')
@@ -136,6 +136,7 @@ def train(dataloader, model, optimizer, log, epoch=0):
     counter = 0
 
     model.train()
+    print('Number of model parameters: {}'.format(sum([p.data.nelement() for p in model.parameters()])))
 
     for batch_idx, (imgL, imgR, disp_L) in enumerate(dataloader):
         
@@ -183,7 +184,7 @@ def train(dataloader, model, optimizer, log, epoch=0):
             all_results[-1, 0, :, :] = disp_L[:, :]/255.0
             torchvision.utils.save_image(all_results, join(args.save_path, "iter-%d.jpg" % batch_idx))
             # print(imgL)
-            im = np.array(imgL[0,:,:,:].permute(1,2,0)*255, dtype=np.uint8)
+            im = np.array(imgL[0,:,:,:].cpu().permute(1,2,0)*255, dtype=np.uint8)
         
             cv.imwrite(join(args.save_path, "itercolor-%d.jpg" % batch_idx),im)
 
@@ -298,6 +299,8 @@ class AverageMeter(object):
 
 
 if __name__ == '__main__':
+    import torch.multiprocessing as mp
+    mp.set_start_method('spawn')
     main()
 
 
