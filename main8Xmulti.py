@@ -21,12 +21,23 @@ from models.StereoNet8Xmulti import StereoNet
 from os.path import join, split, isdir, isfile, splitext, split, abspath, dirname
 import cv2 as cv
 import numpy as np
+torch.backends.cudnn.benchmark = True
+
+import torchvision.transforms as transforms
+mean = torch.tensor([0., 0., 0.], dtype=torch.float32)
+std = torch.tensor([1., 1., 1.], dtype=torch.float32)
+import matplotlib.pyplot as plt
+
+
+unnormalize = transforms.Normalize((-mean / std).tolist(), (1.0 / std).tolist())
+
+
 parser = argparse.ArgumentParser(description='StereoNet with Flyings3d')
 parser.add_argument('--maxdisp', type=int, default=192, help='maxium disparity')
 parser.add_argument('--loss_weights', type=float, nargs='+', default=[1.0, 1.0, 1.0, 1.0, 1.0])
 parser.add_argument('--datapath', default='/home/liu/DP_DATA/STEREO/', help='datapath')
 parser.add_argument('--epoch', type=int, default=15, help='number of epochs to train')
-parser.add_argument('--train_bsize', type=int, default=1,
+parser.add_argument('--train_bsize', type=int, default=2,
                     help='batch size for training(default: 1)')
 parser.add_argument('--itersize', default=1, type=int,
                     metavar='IS', help='iter size')
@@ -34,7 +45,7 @@ parser.add_argument('--test_bsize', type=int, default=1,
                     help='batch size for test(default: 1)')
 parser.add_argument('--save_path', type=str, default='results/8Xmulti',
                     help='the path of saving checkpoints and log')
-parser.add_argument('--resume', type=str, default=None, help='resume path')
+parser.add_argument('--resume', type=str, default='results/8Xmulti/checkpoint.pth', help='resume path')
 parser.add_argument('--lr', type=float, default=1e-3, help='learning rate')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
@@ -71,7 +82,8 @@ def main():
     __normalize = {'mean': [0.0, 0.0, 0.0], 'std': [1.0, 1.0, 1.0]}
     TrainImgLoader = torch.utils.data.DataLoader(
         DA.myImageFloder(train_left_img, train_right_img, train_left_disp, True, normalize=__normalize),
-        batch_size=args.train_bsize, shuffle=False, num_workers=1, drop_last=False)
+        batch_size=args.train_bsize, shuffle=True, num_workers=1, drop_last=False)
+    DA.myImageFloder(train_left_img, train_right_img, train_left_disp, True, normalize=__normalize).__getitem__(0)
 
     TestImgLoader = torch.utils.data.DataLoader(
         DA.myImageFloder(test_left_img, test_right_img, test_left_disp, False, normalize=__normalize),
@@ -166,6 +178,23 @@ def train(dataloader, model, optimizer, log, epoch=0):
         for idx in range(stages):
             losses[idx].update(loss[idx].item()/args.loss_weights[idx])
 
+        if(False):
+            imL_ = unnormalize(imgL[0]).permute(1,2,0).cpu().detach().numpy()
+            imR_ = unnormalize(imgR[0]).permute(1,2,0).cpu().detach().numpy()
+            disp_TRUE_ = disp_L.cpu().detach().numpy()[0]
+            disp_NET_ = outputs[3].cpu().detach().numpy()[0]
+            plt.figure(figsize=(16, 8))
+            plt.subplot(2,2,1)
+            plt.imshow( imL_[...,::-1])
+            plt.subplot(2,2,2)
+            plt.imshow(imR_[...,::-1])
+            plt.subplot(2,2,3)
+            plt.imshow(disp_TRUE_,cmap='rainbow',vmin=0, vmax=192)
+            plt.colorbar()
+            plt.subplot(2,2,4)
+            plt.imshow(disp_NET_,cmap='rainbow',vmin=0, vmax=192)
+            plt.colorbar()
+            plt.show()
 
 
         if batch_idx % args.print_freq == 0:
@@ -177,16 +206,25 @@ def train(dataloader, model, optimizer, log, epoch=0):
                 epoch, batch_idx, length_loader, info_str))
 
             #vis
-            _, H, W = outputs[0].shape
-            all_results = torch.zeros((len(outputs)+1, 1, H, W))
+            B, H, W = outputs[0].shape
+            all_results = torch.zeros((len(outputs)+1, B, H, W))
             for j in range(len(outputs)):
-                all_results[j, 0, :, :] = outputs[j][0, :, :]/255.0
-            all_results[-1, 0, :, :] = disp_L[:, :]/255.0
-            torchvision.utils.save_image(all_results, join(args.save_path, "iter-%d.jpg" % batch_idx))
+                all_results[j, :, :, :] = outputs[j][:, :, :]/255.0
+            all_results[-1, :, :, :] = disp_L[:, :]/255.0
+            torchvision.utils.save_image(all_results[:, 0:1, :, :], join(args.save_path, "iter-%d.jpg" % batch_idx))
             # print(imgL)
             im = np.array(imgL[0,:,:,:].cpu().permute(1,2,0)*255, dtype=np.uint8)
         
             cv.imwrite(join(args.save_path, "itercolor-%d.jpg" % batch_idx),im)
+            if batch_idx % 1000 == 0:
+
+                savefilename = args.save_path + '/checkpoint.pth'
+                torch.save({
+                    'epoch': epoch,
+                    'state_dict': model.state_dict(),
+                    'optimizer': optimizer.state_dict()},
+                    savefilename)
+
 
     info_str = '\t'.join(['Stage {} = {:.2f}'.format(x, losses[x].avg) for x in range(stages)])
     log.info('Average train loss = ' + info_str)

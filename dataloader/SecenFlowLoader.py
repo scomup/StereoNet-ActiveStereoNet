@@ -68,10 +68,10 @@ def disparity_loader(path):
         from readpfm import readPFM
         data, _ = readPFM(path3)
         np.save(path2, data)
-        for i in range(data.shape[0]):
-            for j in range(data.shape[1]):
-                if j - data[i][j] < 0:
-                    data[i][j] = -1
+        #for i in range(data.shape[0]):
+        #    for j in range(data.shape[1]):
+        #        if j - data[i][j] < 0:
+        #            data[i][j] = -1
         np.save(path1, data)
         return data
 
@@ -102,7 +102,7 @@ class myImageFloder(data.Dataset):
         left_img = self.loader(left)
         right_img = self.loader(right)
         dataL = self.dploader(disp_L)
-        
+        dataL = np.clip(dataL, 0, 192)    
         dataL = np.ascontiguousarray(dataL, dtype=np.float32)
 
         processed = preprocess.get_transform(
