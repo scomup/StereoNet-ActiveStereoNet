@@ -6,7 +6,7 @@
 import os
 import torch
 import torch.nn.functional as F
-import cv2 as cv
+#import cv2 as cv
 import numpy as np
 def GERF_loss(GT, pred, args):
     # mask = (GT < args.maxdisp) & (GT >= 0)
@@ -31,15 +31,16 @@ def smooth_L1_loss(GT, pred, args):
 
 if __name__ == '__main__':
 
+    pass
     # import matplotlib.pyplot as plt
     # image = cv.imread('/media/lxy/sdd1/ActiveStereoNet/StereoNet_pytorch/results/forvideo/iter-122.jpg')
 
-    im_gray = cv.imread('/media/lxy/sdd1/ActiveStereoNet/StereoNet_pytorch/results/forvideo/iter-133.jpg', cv.IMREAD_GRAYSCALE)
+    #im_gray = cv.imread('/media/lxy/sdd1/ActiveStereoNet/StereoNet_pytorch/results/forvideo/iter-133.jpg', cv.IMREAD_GRAYSCALE)
     # print(im_gray.shape)
-    im_color = cv.applyColorMap(im_gray*2, cv.COLORMAP_JET)
+    #im_color = cv.applyColorMap(im_gray*2, cv.COLORMAP_JET)
     # cv.imshow('test', im_color)
     # cv.waitKey(0)
-    cv.imwrite('test.png',im_color)
+    #cv.imwrite('test.png',im_color)
     # print(image.shape)
     # plt.figure('Image')
     # sc =plt.imshow(image)

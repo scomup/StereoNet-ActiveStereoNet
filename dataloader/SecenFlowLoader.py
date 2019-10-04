@@ -19,6 +19,37 @@ IMG_EXTENSIONS = [
     '.BMP',
 ]
 
+from torchvision.transforms.functional import adjust_brightness, adjust_contrast
+import sys
+try:
+    sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
+except:
+    pass
+import cv2 as cv
+
+
+def motion_blur(image, max_kernel_size=20):
+
+    mode = np.random.choice(['h', 'v', 'diag_down', 'diag_up'])
+    ksize = np.random.randint(0, (max_kernel_size+1)/2)*2 + 1  # make sure is odd
+    center = int((ksize-1)/2)
+    kernel = np.zeros((ksize, ksize))
+    if mode == 'h':
+        kernel[center, :] = 1.
+    elif mode == 'v':
+        kernel[:, center] = 1.
+    elif mode == 'diag_down':
+        kernel = np.eye(ksize)
+    elif mode == 'diag_up':
+        kernel = np.flip(np.eye(ksize), 0)
+    var = ksize * ksize / 16.
+    grid = np.repeat(np.arange(ksize)[:, np.newaxis], ksize, axis=-1)
+    gaussian = np.exp(-(np.square(grid-center)+np.square(grid.T-center))/(2.*var))
+    kernel *= gaussian
+    kernel /= np.sum(kernel)
+    image = cv.filter2D(image, -1, kernel)
+    return image
+
 
 def is_image_file(filename):
     return any(filename.endswith(extension) for extension in IMG_EXTENSIONS)
@@ -102,7 +133,36 @@ class myImageFloder(data.Dataset):
         left_img = self.loader(left)
         right_img = self.loader(right)
         dataL = self.dploader(disp_L)
-        dataL = np.clip(dataL, 0, 192)    
+        dataL = np.clip(dataL, 0, 192)   
+        stddev = np.random.uniform(5,10)
+
+        factor = 1. + random.uniform(-0.5, 0.5)
+        left_img = adjust_brightness(left_img, factor)
+        right_img = adjust_brightness(right_img, factor)
+
+
+        factor = 1. + random.uniform(-0.5, 0.5)
+        left_img = adjust_contrast(left_img, factor)
+        right_img = adjust_contrast(right_img, factor)
+
+
+        left_img = np.asarray(left_img)
+        right_img = np.asarray(right_img)
+        
+
+        noise = np.random.normal(0, stddev, left_img.shape)
+        left_img = np.clip(left_img + noise, 0, 255)
+        noise = np.random.normal(0, stddev, left_img.shape)
+        right_img = np.clip(right_img + noise, 0, 255)
+
+        left_img = motion_blur(left_img)
+        right_img = motion_blur(right_img)
+
+
+        left_img = Image.fromarray(np.uint8(left_img))
+        right_img = Image.fromarray(np.uint8(right_img))
+
+
         dataL = np.ascontiguousarray(dataL, dtype=np.float32)
 
         processed = preprocess.get_transform(

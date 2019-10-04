@@ -19,7 +19,7 @@ import utils.logger as logger
 from utils.utils import GERF_loss, smooth_L1_loss
 from models.StereoNet8Xmulti import StereoNet
 from os.path import join, split, isdir, isfile, splitext, split, abspath, dirname
-import cv2 as cv
+#import cv2 as cv
 import numpy as np
 torch.backends.cudnn.benchmark = True
 
@@ -178,7 +178,7 @@ def train(dataloader, model, optimizer, log, epoch=0):
         for idx in range(stages):
             losses[idx].update(loss[idx].item()/args.loss_weights[idx])
 
-        if(False):
+        if(True):
             imL_ = unnormalize(imgL[0]).permute(1,2,0).cpu().detach().numpy()
             imR_ = unnormalize(imgR[0]).permute(1,2,0).cpu().detach().numpy()
             disp_TRUE_ = disp_L.cpu().detach().numpy()[0]
@@ -214,8 +214,10 @@ def train(dataloader, model, optimizer, log, epoch=0):
             torchvision.utils.save_image(all_results[:, 0:1, :, :], join(args.save_path, "iter-%d.jpg" % batch_idx))
             # print(imgL)
             im = np.array(imgL[0,:,:,:].cpu().permute(1,2,0)*255, dtype=np.uint8)
+            #im = cv.applyColorMap(im, cv.COLORMAP_RAINBOW)
+
         
-            cv.imwrite(join(args.save_path, "itercolor-%d.jpg" % batch_idx),im)
+            #cv.imwrite(join(args.save_path, "itercolor-%d.jpg" % batch_idx),im)
             if batch_idx % 1000 == 0:
 
                 savefilename = args.save_path + '/checkpoint.pth'
